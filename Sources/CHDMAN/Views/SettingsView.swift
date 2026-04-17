@@ -64,23 +64,47 @@ struct SettingsView: View {
 
             // ── Conversion options ────────────────────────────────────────────
             Section {
-                Toggle(isOn: $vm.deleteSourceAfterConversion) {
+                VStack(alignment: .leading, spacing: 10) {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Delete source files after conversion")
+                        Text("Compression preset")
                             .font(.system(.body, design: .rounded).weight(.semibold))
-                        Text("Removes original ISO/CUE/BIN/GDI files after successful CHD creation")
+                        Text("Choose whether to favor shorter conversions or smaller CHD files")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                }
 
-                Toggle(isOn: $vm.notifyOnCompletion) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Notify when batch completes")
-                            .font(.system(.body, design: .rounded).weight(.semibold))
-                        Text("Send a macOS notification when all jobs finish")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    Picker("Compression preset", selection: Binding(
+                        get: { vm.compressionPreset },
+                        set: { vm.compressionPreset = $0 }
+                    )) {
+                        ForEach(CompressionPreset.allCases) { preset in
+                            Text(preset.title).tag(preset)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    Text(vm.compressionPreset.detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Toggle(isOn: $vm.deleteSourceAfterConversion) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Delete source files after conversion")
+                                .font(.system(.body, design: .rounded).weight(.semibold))
+                            Text("Removes original ISO/CUE/BIN/GDI files after successful CHD creation")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Toggle(isOn: $vm.notifyOnCompletion) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Notify when batch completes")
+                                .font(.system(.body, design: .rounded).weight(.semibold))
+                            Text("Send a macOS notification when all jobs finish")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
             } header: {

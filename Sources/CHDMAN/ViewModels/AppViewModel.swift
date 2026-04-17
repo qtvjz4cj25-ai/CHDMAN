@@ -1,6 +1,5 @@
 import Foundation
 import SwiftUI
-import Combine
 import AppKit
 
 @MainActor
@@ -29,6 +28,12 @@ final class AppViewModel: ObservableObject {
     @AppStorage("customChdmanPath") var customChdmanPath: String = ""
     @AppStorage("deleteSourceAfterConversion") var deleteSourceAfterConversion: Bool = false
     @AppStorage("notifyOnCompletion") var notifyOnCompletion: Bool = true
+    @AppStorage("compressionPreset") private var compressionPresetRawValue: String = CompressionPreset.balanced.rawValue
+
+    var compressionPreset: CompressionPreset {
+        get { CompressionPreset(rawValue: compressionPresetRawValue) ?? .balanced }
+        set { compressionPresetRawValue = newValue.rawValue }
+    }
 
     // MARK: - Computed counts / progress
 
@@ -170,13 +175,14 @@ final class AppViewModel: ObservableObject {
         appendGlobalLog(capLine)
 
         let concurrency = min(parallelJobs, ProcessInfo.processInfo.activeProcessorCount)
-        let startMsg = "[\(timestamp())] Starting conversion — concurrency=\(concurrency)"
+        let startMsg = "[\(timestamp())] Starting conversion — concurrency=\(concurrency) preset=\(compressionPreset.title)"
         appendGlobalLog(startMsg)
         Task { await logStore.appendGlobal(startMsg) }
 
         let eng = ConversionEngine(
             chdmanPath: chdmanPath,
             capabilities: caps,
+            compressionPreset: compressionPreset,
             concurrency: concurrency,
             jobs: jobs,
             logStore: logStore,

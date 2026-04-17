@@ -80,8 +80,7 @@ struct LogPanelView: View {
 // MARK: - Per-job log sheet
 
 struct JobLogSheet: View {
-    let job: ConversionJob
-    @State private var localLog = ""
+    @ObservedObject var job: ConversionJob
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -120,9 +119,9 @@ struct JobLogSheet: View {
             Divider()
 
             ScrollView {
-                Text(localLog.isEmpty ? "No output for this job." : localLog)
+                Text(job.log.isEmpty ? "No output for this job." : job.log)
                     .font(.system(size: 11, design: .monospaced))
-                    .foregroundStyle(localLog.isEmpty ? Color.secondary : Color.primary)
+                    .foregroundStyle(job.log.isEmpty ? Color.secondary : Color.primary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(10)
                     .textSelection(.enabled)
@@ -135,8 +134,6 @@ struct JobLogSheet: View {
             )
         }
         .frame(width: 660, height: 420)
-        .onReceive(job.objectWillChange) { _ in localLog = job.log }
-        .onAppear { localLog = job.log }
     }
 
     @ViewBuilder

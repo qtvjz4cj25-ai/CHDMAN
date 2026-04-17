@@ -100,6 +100,7 @@ final class ConversionEngine: @unchecked Sendable {
 
     let chdmanPath:   String
     let capabilities: ChdmanCapabilities
+    let compressionPreset: CompressionPreset
     let concurrency:  Int
     let jobs:         [ConversionJob]
     let logStore:     LogStore
@@ -120,6 +121,7 @@ final class ConversionEngine: @unchecked Sendable {
     init(
         chdmanPath:   String,
         capabilities: ChdmanCapabilities,
+        compressionPreset: CompressionPreset,
         concurrency:  Int,
         jobs:         [ConversionJob],
         logStore:     LogStore,
@@ -127,6 +129,7 @@ final class ConversionEngine: @unchecked Sendable {
     ) {
         self.chdmanPath   = chdmanPath
         self.capabilities = capabilities
+        self.compressionPreset = compressionPreset
         self.concurrency  = max(1, concurrency)
         self.jobs         = jobs
         self.logStore     = logStore
@@ -252,7 +255,7 @@ final class ConversionEngine: @unchecked Sendable {
 
         // Attempt 1: createdvd (preferred for ISOs)
         if capabilities.hasCreateDVD {
-            if let r = await runChdman(job: job, snapshot: snapshot, args: ["createdvd", "-i", snapshot.path, "-o", snapshot.outputPath]),
+            if let r = await runChdman(job: job, snapshot: snapshot, args: commandArgs(command: "createdvd", inputPath: snapshot.path, outputPath: snapshot.outputPath)),
                r.succeeded, chdValid(snapshot.outputPath) {
                 return true
             }
@@ -274,7 +277,7 @@ final class ConversionEngine: @unchecked Sendable {
 
         // Attempt 2: createcd
         if capabilities.hasCreateCD {
-            if let r = await runChdman(job: job, snapshot: snapshot, args: ["createcd", "-i", snapshot.path, "-o", snapshot.outputPath]),
+            if let r = await runChdman(job: job, snapshot: snapshot, args: commandArgs(command: "createcd", inputPath: snapshot.path, outputPath: snapshot.outputPath)),
                r.succeeded, chdValid(snapshot.outputPath) {
                 return true
             }
@@ -301,7 +304,7 @@ final class ConversionEngine: @unchecked Sendable {
             return false
         }
 
-        guard let r = await runChdman(job: job, snapshot: snapshot, args: ["createcd", "-i", snapshot.path, "-o", snapshot.outputPath]),
+        guard let r = await runChdman(job: job, snapshot: snapshot, args: commandArgs(command: "createcd", inputPath: snapshot.path, outputPath: snapshot.outputPath)),
               r.succeeded, chdValid(snapshot.outputPath) else {
             removeInvalidCHD(snapshot.outputPath)
             let msg = "[\(ts())] [FAIL] \(snapshot.filename) — createcd failed."
@@ -332,7 +335,7 @@ final class ConversionEngine: @unchecked Sendable {
             return false
         }
 
-        guard let r = await runChdman(job: job, snapshot: snapshot, args: ["createcd", "-i", snapshot.path, "-o", snapshot.outputPath]),
+        guard let r = await runChdman(job: job, snapshot: snapshot, args: commandArgs(command: "createcd", inputPath: snapshot.path, outputPath: snapshot.outputPath)),
               r.succeeded, chdValid(snapshot.outputPath) else {
             removeInvalidCHD(snapshot.outputPath)
             let msg = "[\(ts())] [FAIL] \(snapshot.filename) — createcd failed."
@@ -392,6 +395,10 @@ final class ConversionEngine: @unchecked Sendable {
     }
 
     // MARK: - Job state helpers
+
+    private func commandArgs(command: String, inputPath: String, outputPath: String) -> [String] {
+        [command, "-i", inputPath, "-o", outputPath] + compressionPreset.arguments(for: command)
+    }
 
     private func setJob(_ job: ConversionJob, status: JobStatus, detail: String, log text: String) async {
         await MainActor.run {

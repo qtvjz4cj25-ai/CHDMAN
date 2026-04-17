@@ -211,6 +211,11 @@ struct ContentView: View {
 
             Divider().frame(height: 18)
 
+            compressionPresetChip
+                .help(vm.compressionPreset.detail)
+
+            Divider().frame(height: 18)
+
             // Start
             Button {
                 Task { await vm.startConversion() }
@@ -296,6 +301,42 @@ struct ContentView: View {
                                   : Color.primary.opacity(0.1),
                                   lineWidth: 0.5)
             )
+    }
+
+    @ViewBuilder
+    private var compressionPresetChip: some View {
+        Menu {
+            ForEach(CompressionPreset.allCases) { preset in
+                Button {
+                    vm.compressionPreset = preset
+                } label: {
+                    HStack {
+                        Text(preset.title)
+                        if preset == vm.compressionPreset {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "shippingbox.circle")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+                Text(vm.compressionPreset.title)
+                    .font(.system(.caption, design: .monospaced).weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(Color.primary.opacity(0.05))
+            )
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .disabled(vm.isConverting)
     }
 
     // MARK: - Progress and counts
