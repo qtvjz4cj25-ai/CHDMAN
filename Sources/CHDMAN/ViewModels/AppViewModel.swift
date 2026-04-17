@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 import Combine
-import UserNotifications
+import AppKit
 
 @MainActor
 final class AppViewModel: ObservableObject {
@@ -241,15 +241,12 @@ final class AppViewModel: ObservableObject {
     // MARK: - Notifications
 
     func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        // No-op: NSSound-based notification needs no permission
     }
 
     private func sendCompletionNotification() {
-        let content = UNMutableNotificationContent()
-        content.title = "CHDMAN — Batch Complete"
-        content.body = "\(doneCount) done, \(failedCount) failed, \(skippedCount) skipped."
-        content.sound = .default
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-        UNUserNotificationCenter.current().add(request)
+        NSSound.beep()
+        // Bounce the dock icon to get attention
+        NSApp.requestUserAttention(.informationalRequest)
     }
 }
