@@ -55,6 +55,28 @@ extension String {
         guard budget > 4 else { return ellipsis + filename }
         return String(prefix(budget)) + ellipsis + filename
     }
+
+    mutating func appendCappedLine(_ line: String, limit: Int) {
+        guard limit > 0 else {
+            self = ""
+            return
+        }
+
+        if !isEmpty {
+            append("\n")
+        }
+        append(line)
+
+        guard count > limit else { return }
+
+        let excess = count - limit
+        let trimIndex = index(startIndex, offsetBy: min(excess, count))
+        self = String(self[trimIndex...])
+
+        if let newlineIndex = firstIndex(of: "\n") {
+            self = String(self[index(after: newlineIndex)...])
+        }
+    }
 }
 
 // MARK: - NSPasteboard helper

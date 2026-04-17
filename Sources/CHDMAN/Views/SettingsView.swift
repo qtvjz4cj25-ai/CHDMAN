@@ -107,23 +107,63 @@ struct SettingsView: View {
 
             // ── Install hint ──────────────────────────────────────────────────
             Section {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("If chdman is not installed, run in Terminal:")
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Option 1 — Homebrew (recommended)")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Text("Requires Homebrew, the macOS package manager. If you don't have it, install it first from brew.sh.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text("brew install rom-tools")
-                        .font(.system(.body, design: .monospaced))
-                        .padding(8)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(Color(nsColor: .textBackgroundColor))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5)
-                        )
-                        .textSelection(.enabled)
+                    HStack(spacing: 6) {
+                        Button {
+                            if let url = URL(string: "https://brew.sh") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        } label: {
+                            Label("Get Homebrew", systemImage: "arrow.up.right.square")
+                                .font(.caption)
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                    HStack {
+                        Text("brew install rom-tools")
+                            .font(.system(.body, design: .monospaced))
+                            .textSelection(.enabled)
+                        Spacer()
+                        Button {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString("brew install rom-tools", forType: .string)
+                        } label: {
+                            Image(systemName: "doc.on.doc")
+                        }
+                        .buttonStyle(.borderless)
+                        .help("Copy to clipboard")
+                    }
+                    .padding(8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color(nsColor: .textBackgroundColor))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5)
+                    )
+
+                    Divider()
+
+                    Text("Option 2 — Download from MAME")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Text("Download MAME, which includes chdman, then use Browse above to set the path.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button {
+                        if let url = URL(string: "https://www.mamedev.org/release.html") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    } label: {
+                        Label("Open MAME Downloads", systemImage: "arrow.up.right.square")
+                    }
                 }
             } header: {
                 Label("Installation", systemImage: "terminal")

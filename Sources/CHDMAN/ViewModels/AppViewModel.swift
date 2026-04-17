@@ -15,11 +15,13 @@ final class AppViewModel: ObservableObject {
     @Published var isScanning: Bool = false
     @Published var isConverting: Bool = false
     @Published var isPaused: Bool = false
+    @Published var isCancelling: Bool = false
     @Published var globalLog: String = ""
     @Published var autoScrollLog: Bool = true
     @Published var conversionStartDate: Date?
     @Published var showChdmanAlert: Bool = false
     @Published var chdmanAlertMessage: String = ""
+    @Published var chdmanMissing: Bool = false
     @Published var chdmanCapabilities: ChdmanCapabilities?
 
     // MARK: - Persisted settings
@@ -70,18 +72,34 @@ final class AppViewModel: ObservableObject {
         !jobs.isEmpty && !isConverting &&
         jobs.contains(where: { $0.status == .pending })
     }
-    var canPause: Bool  { isConverting && !isPaused }
-    var canResume: Bool { isConverting &&  isPaused }
-    var canCancel: Bool { isConverting }
+    var canPause: Bool  { isConverting && !isPaused && !isCancelling }
+    var canResume: Bool { isConverting &&  isPaused && !isCancelling }
+    var canCancel: Bool { isConverting && !isCancelling }
 
     // MARK: - Private services
 
     private let scanner  = FolderScanner()
     private let locator  = ChdmanLocator()
     private let logStore = LogStore()
+    private let maxGlobalLogCharacters = 200_000
 
     private var engine: ConversionEngine?
     private var conversionTask: Task<Void, Never>?
+    private var currentRunID: UUID?
+    private var currentRunWasCancelled = false
+
+    // MARK: - Startup check
+
+    func checkChdmanAvailability() async {
+        do {
+            _ = try await locator.locate(
+                customPath: customChdmanPath.isEmpty ? nil : customChdmanPath
+            )
+            chdmanMissing = false
+        } catch {
+            chdmanMissing = true
+        }
+    }
 
     // MARK: - Folder picker
 
@@ -173,19 +191,37 @@ final class AppViewModel: ObservableObject {
         engine = eng
         isConverting = true
         isPaused = false
+        isCancelling = false
         conversionStartDate = Date()
+        let runID = UUID()
+        currentRunID = runID
+        currentRunWasCancelled = false
 
         conversionTask = Task { [weak self] in
             await eng.run()
             await MainActor.run { [weak self] in
                 guard let self else { return }
+                guard self.currentRunID == runID else { return }
+
+                let wasCancelled = self.currentRunWasCancelled
                 self.isConverting = false
+                self.isCancelling = false
                 self.conversionStartDate = nil
                 self.engine = nil
-                let doneMsg = "[\(self.timestamp())] All jobs finished — \(self.doneCount) done, \(self.failedCount) failed, \(self.skippedCount) skipped."
+                self.conversionTask = nil
+                self.currentRunID = nil
+                self.currentRunWasCancelled = false
+
+                let doneMsg: String
+                if wasCancelled {
+                    doneMsg = "[\(self.timestamp())] Batch cancelled — \(self.doneCount) done, \(self.failedCount) failed, \(self.skippedCount) skipped, \(self.cancelledCount) cancelled."
+                } else {
+                    doneMsg = "[\(self.timestamp())] All jobs finished — \(self.doneCount) done, \(self.failedCount) failed, \(self.skippedCount) skipped."
+                }
+
                 self.appendGlobalLog(doneMsg)
                 Task { await self.logStore.appendGlobal(doneMsg) }
-                if self.notifyOnCompletion {
+                if self.notifyOnCompletion && !wasCancelled {
                     self.sendCompletionNotification()
                 }
             }
@@ -211,11 +247,12 @@ final class AppViewModel: ObservableObject {
     }
 
     func cancelConversion() {
-        engine?.cancel()
-        conversionTask?.cancel()
-        isConverting = false
+        guard isConverting, !isCancelling else { return }
+        isCancelling = true
         isPaused = false
-        let line = "[\(timestamp())] [CANCEL] Conversion cancelled by user."
+        currentRunWasCancelled = true
+        engine?.cancel()
+        let line = "[\(timestamp())] [CANCEL] Cancellation requested — active jobs will stop."
         appendGlobalLog(line)
         Task { await logStore.appendGlobal(line) }
     }
@@ -231,7 +268,7 @@ final class AppViewModel: ObservableObject {
     }
 
     func appendGlobalLog(_ line: String) {
-        globalLog += line + "\n"
+        globalLog.appendCappedLine(line, limit: maxGlobalLogCharacters)
     }
 
     func timestamp() -> String {

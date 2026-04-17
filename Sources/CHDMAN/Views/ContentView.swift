@@ -74,6 +74,27 @@ struct ContentView: View {
         } message: {
             Text(vm.chdmanAlertMessage)
         }
+        .alert("chdman not found", isPresented: $vm.chdmanMissing) {
+            Button("Copy Homebrew Command") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString("brew install rom-tools", forType: .string)
+            }
+            Button("Download from MAME") {
+                if let url = URL(string: "https://www.mamedev.org/release.html") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+            Button("Open Settings") {
+                // SettingsLink can't be used inside alerts; selector is the only option here
+                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+            }
+            Button("Dismiss", role: .cancel) {}
+        } message: {
+            Text("chdman is required but was not found on this system.\n\nOption 1 — Homebrew (requires brew.sh):\nbrew install rom-tools\n\nOption 2 — Download MAME (includes chdman), then set the path in Settings.\n\nDon't have Homebrew? Visit brew.sh to install it first, or use Option 2.")
+        }
+        .task {
+            await vm.checkChdmanAvailability()
+        }
     }
 
     // MARK: - Toolbar background
@@ -239,12 +260,19 @@ struct ContentView: View {
             }
 
             // Settings
-            Button {
-                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-            } label: {
-                Image(systemName: "gear")
+            if #available(macOS 14.0, *) {
+                SettingsLink {
+                    Image(systemName: "gear")
+                }
+                .help("Settings — configure chdman path")
+            } else {
+                Button {
+                    NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+                } label: {
+                    Image(systemName: "gear")
+                }
+                .help("Settings — configure chdman path")
             }
-            .help("Settings — configure chdman path")
         }
     }
 

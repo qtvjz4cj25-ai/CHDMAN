@@ -5,7 +5,9 @@
     <key>CFBundleIdentifier</key>
     <string>com.chdman.app</string>
     <key>CFBundleName</key>
-    <string>CHDMAN</string>
+    <string>CHD for Mac</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>

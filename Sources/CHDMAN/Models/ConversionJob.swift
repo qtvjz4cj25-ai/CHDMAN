@@ -1,5 +1,4 @@
 import Foundation
-import Combine
 
 // MARK: - SourceType
 
@@ -37,6 +36,8 @@ enum JobStatus: String, CaseIterable, Hashable, Sendable {
 
 @MainActor
 final class ConversionJob: ObservableObject, Identifiable {
+    private static let maxLogCharacters = 50_000
+
     let id = UUID()
     let sourceURL: URL
     let sourceType: SourceType
@@ -57,6 +58,6 @@ final class ConversionJob: ObservableObject, Identifiable {
     }
 
     func appendLog(_ text: String) {
-        log += text
+        log.appendCappedLine(text.trimmingCharacters(in: .newlines), limit: Self.maxLogCharacters)
     }
 }
