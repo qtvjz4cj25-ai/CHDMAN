@@ -9,6 +9,7 @@ This project was vibe coded with [Claude](https://claude.ai) (Anthropic's AI ass
 ## Features
 
 - Batch convert CUE/BIN, GDI, and ISO disc images to CHD
+- **Compression presets** — Fast, Balanced, or Smallest to trade speed for file size
 - Folder scanning with recursive file discovery
 - Drag and drop folder support
 - Parallel conversions with configurable concurrency
@@ -21,6 +22,18 @@ This project was vibe coded with [Claude](https://claude.ai) (Anthropic's AI ass
 - Automatic chdman capability detection (createcd/createdvd)
 - Configurable chdman binary path
 - macOS native SwiftUI interface
+
+## Compression Presets
+
+CHD is a **lossless** format — gameplay is identical regardless of preset. The preset only affects conversion speed and resulting file size.
+
+| Preset | Description | Best for |
+|--------|-------------|----------|
+| **Fast** | Lightweight compression (zlib/cdzl) | Large libraries where speed matters |
+| **Balanced** | chdman defaults | General use (default) |
+| **Smallest** | Multi-codec with tuned hunk sizes (lzma, cdlz, flac) | Maximizing disk savings |
+
+Change the preset from the toolbar chip or in **Settings > Conversion**.
 
 ## Requirements
 
