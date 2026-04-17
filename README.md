@@ -1,4 +1,4 @@
-# CHD for Mac - Batch CHD Converter
+# CHDForge - Batch CHD Converter
 
 A macOS app for batch converting disc images (CUE/BIN, GDI) to CHD format using [chdman](https://wiki.recalbox.com/en/tutorials/utilities/rom-conversion/chdman).
 

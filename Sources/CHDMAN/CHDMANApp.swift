@@ -11,7 +11,7 @@ struct CHDMANApp: App {
     }
 
     var body: some Scene {
-        Window("CHD for Mac", id: "main") {
+        Window("CHDForge", id: "main") {
             ContentView()
                 .environmentObject(viewModel)
                 .frame(minWidth: 960, minHeight: 640)
