@@ -103,6 +103,7 @@ final class ConversionEngine: @unchecked Sendable {
     let concurrency:  Int
     let jobs:         [ConversionJob]
     let logStore:     LogStore
+    let deleteSource: Bool
 
     /// Called on every log line so the view model can append it to the global log.
     /// Stored as @unchecked because AppViewModel is @MainActor-isolated (safe).
@@ -121,13 +122,15 @@ final class ConversionEngine: @unchecked Sendable {
         capabilities: ChdmanCapabilities,
         concurrency:  Int,
         jobs:         [ConversionJob],
-        logStore:     LogStore
+        logStore:     LogStore,
+        deleteSource: Bool = false
     ) {
         self.chdmanPath   = chdmanPath
         self.capabilities = capabilities
         self.concurrency  = max(1, concurrency)
         self.jobs         = jobs
         self.logStore     = logStore
+        self.deleteSource = deleteSource
         self.sema         = AsyncSemaphore(max(1, concurrency))
     }
 
@@ -235,6 +238,9 @@ final class ConversionEngine: @unchecked Sendable {
             await setJob(job, status: .done, detail: "Done", log: okMsg)
             emit(okMsg)
             Task { await logStore.appendGlobal(okMsg) }
+            if deleteSource && snapshot.sourceType == .iso {
+                safeDelete(snapshot.sourceURL)
+            }
         }
         // On failure, sub-methods handle setting status and logging.
     }
@@ -305,8 +311,8 @@ final class ConversionEngine: @unchecked Sendable {
             return false
         }
 
-        // Delete sources only after confirmed success.
-        if let refs = try? CueParser().referencedFiles(cueURL: snapshot.sourceURL) {
+        if deleteSource,
+           let refs = try? CueParser().referencedFiles(cueURL: snapshot.sourceURL) {
             safeDelete(snapshot.sourceURL)
             refs.forEach { safeDelete($0) }
         }
@@ -336,7 +342,8 @@ final class ConversionEngine: @unchecked Sendable {
             return false
         }
 
-        if let refs = try? GdiParser().referencedFiles(gdiURL: snapshot.sourceURL) {
+        if deleteSource,
+           let refs = try? GdiParser().referencedFiles(gdiURL: snapshot.sourceURL) {
             safeDelete(snapshot.sourceURL)
             refs.forEach { safeDelete($0) }
         }

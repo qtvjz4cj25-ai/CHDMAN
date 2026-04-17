@@ -7,6 +7,7 @@ struct CHDMANApp: App {
 
     init() {
         NSWindow.allowsAutomaticWindowTabbing = false
+        viewModel.requestNotificationPermission()
     }
 
     var body: some Scene {

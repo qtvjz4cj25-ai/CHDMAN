@@ -62,6 +62,31 @@ struct SettingsView: View {
                 Label("chdman Executable", systemImage: "wrench.and.screwdriver")
             }
 
+            // ── Conversion options ────────────────────────────────────────────
+            Section {
+                Toggle(isOn: $vm.deleteSourceAfterConversion) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Delete source files after conversion")
+                            .font(.system(.body, design: .rounded).weight(.semibold))
+                        Text("Removes original ISO/CUE/BIN/GDI files after successful CHD creation")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Toggle(isOn: $vm.notifyOnCompletion) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Notify when batch completes")
+                            .font(.system(.body, design: .rounded).weight(.semibold))
+                        Text("Send a macOS notification when all jobs finish")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } header: {
+                Label("Conversion Options", systemImage: "slider.horizontal.3")
+            }
+
             // ── Detected capabilities ─────────────────────────────────────────
             Section {
                 if let caps = vm.chdmanCapabilities {
@@ -106,7 +131,7 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
-        .frame(width: 500, height: 370)
+        .frame(width: 500, height: 520)
         .onAppear { draftPath = vm.customChdmanPath }
     }
 

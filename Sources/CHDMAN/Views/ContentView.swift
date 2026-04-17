@@ -275,11 +275,19 @@ struct ContentView: View {
     @ViewBuilder
     private var progressView: some View {
         HStack(spacing: 12) {
-            ProgressView(value: vm.progress)
-                .progressViewStyle(.linear)
-                .frame(maxWidth: .infinity)
-                .tint(progressTint)
-                .animation(.easeInOut(duration: 0.25), value: vm.progress)
+            VStack(alignment: .leading, spacing: 2) {
+                ProgressView(value: vm.progress)
+                    .progressViewStyle(.linear)
+                    .tint(progressTint)
+                    .animation(.easeInOut(duration: 0.25), value: vm.progress)
+
+                if let eta = vm.estimatedTimeRemaining {
+                    Text("~\(eta) remaining")
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity)
 
             HStack(spacing: 6) {
                 countChip("\(vm.totalCount)",     icon: "tray.full",         tip: "Total",     color: .secondary)

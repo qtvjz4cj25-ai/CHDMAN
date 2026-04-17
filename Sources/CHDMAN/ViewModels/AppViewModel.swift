@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import UserNotifications
 
 @MainActor
 final class AppViewModel: ObservableObject {
@@ -16,6 +17,7 @@ final class AppViewModel: ObservableObject {
     @Published var isPaused: Bool = false
     @Published var globalLog: String = ""
     @Published var autoScrollLog: Bool = true
+    @Published var conversionStartDate: Date?
     @Published var showChdmanAlert: Bool = false
     @Published var chdmanAlertMessage: String = ""
     @Published var chdmanCapabilities: ChdmanCapabilities?
@@ -23,6 +25,8 @@ final class AppViewModel: ObservableObject {
     // MARK: - Persisted settings
 
     @AppStorage("customChdmanPath") var customChdmanPath: String = ""
+    @AppStorage("deleteSourceAfterConversion") var deleteSourceAfterConversion: Bool = false
+    @AppStorage("notifyOnCompletion") var notifyOnCompletion: Bool = true
 
     // MARK: - Computed counts / progress
 
@@ -40,6 +44,18 @@ final class AppViewModel: ObservableObject {
     var progress: Double {
         guard totalCount > 0 else { return 0 }
         return Double(finishedCount) / Double(totalCount)
+    }
+
+    var estimatedTimeRemaining: String? {
+        guard let start = conversionStartDate,
+              isConverting,
+              finishedCount > 0 else { return nil }
+        let elapsed = Date().timeIntervalSince(start)
+        let avgPerJob = elapsed / Double(finishedCount)
+        let remaining = Int(avgPerJob * Double(totalCount - finishedCount))
+        if remaining < 60 { return "\(remaining)s" }
+        if remaining < 3600 { return "\(remaining / 60)m \(remaining % 60)s" }
+        return "\(remaining / 3600)h \(remaining % 3600 / 60)m"
     }
 
     // MARK: - Button availability
@@ -145,7 +161,8 @@ final class AppViewModel: ObservableObject {
             capabilities: caps,
             concurrency: concurrency,
             jobs: jobs,
-            logStore: logStore
+            logStore: logStore,
+            deleteSource: deleteSourceAfterConversion
         )
         eng.onLogLine = { [weak self] line in
             Task { @MainActor [weak self] in
@@ -156,16 +173,21 @@ final class AppViewModel: ObservableObject {
         engine = eng
         isConverting = true
         isPaused = false
+        conversionStartDate = Date()
 
         conversionTask = Task { [weak self] in
             await eng.run()
             await MainActor.run { [weak self] in
                 guard let self else { return }
                 self.isConverting = false
+                self.conversionStartDate = nil
                 self.engine = nil
-                let doneMsg = "[\(self.timestamp())] All jobs finished."
+                let doneMsg = "[\(self.timestamp())] All jobs finished — \(self.doneCount) done, \(self.failedCount) failed, \(self.skippedCount) skipped."
                 self.appendGlobalLog(doneMsg)
                 Task { await self.logStore.appendGlobal(doneMsg) }
+                if self.notifyOnCompletion {
+                    self.sendCompletionNotification()
+                }
             }
         }
     }
@@ -214,5 +236,20 @@ final class AppViewModel: ObservableObject {
 
     func timestamp() -> String {
         DateFormatter.timestamp.string(from: Date())
+    }
+
+    // MARK: - Notifications
+
+    func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+    }
+
+    private func sendCompletionNotification() {
+        let content = UNMutableNotificationContent()
+        content.title = "CHDMAN — Batch Complete"
+        content.body = "\(doneCount) done, \(failedCount) failed, \(skippedCount) skipped."
+        content.sound = .default
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request)
     }
 }
