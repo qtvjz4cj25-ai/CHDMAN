@@ -38,13 +38,13 @@ brew install rom-tools
 
 ## Running unsigned apps on macOS
 
-Since CHDForge is not distributed through the Mac App Store or signed with an Apple Developer ID, macOS Gatekeeper will block it the first time you try to open it. To allow it:
+Since CHDForge is not signed with an Apple Developer ID, macOS Gatekeeper will block it. The most reliable way to allow it is to remove the quarantine attribute in Terminal:
 
-1. **Right-click** (or Control-click) the app and select **Open**
-2. Click **Open** in the dialog that appears
-3. You only need to do this once — macOS will remember your choice
+```bash
+xattr -cr /path/to/CHDForge.app
+```
 
-Alternatively, go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to the blocked app message.
+Replace `/path/to/CHDForge.app` with the actual path (or drag the app into Terminal to paste it). After that, the app will open normally.
 
 ## Building
 
