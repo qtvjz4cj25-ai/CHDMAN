@@ -30,8 +30,8 @@ struct FileListView: View {
             }
             .width(min: 160, ideal: 210)
 
-            // Output CHD path
-            TableColumn("Output CHD") { job in
+            // Output path
+            TableColumn("Output") { job in
                 HStack(spacing: 4) {
                     Text(job.outputPath.truncatedPath())
                         .lineLimit(1)
@@ -49,7 +49,7 @@ struct FileListView: View {
                                 .foregroundStyle(Color.accentColor)
                         }
                         .buttonStyle(.plain)
-                        .help("Reveal output CHD in Finder")
+                        .help("Reveal output in Finder")
                     }
                 }
             }
@@ -87,7 +87,7 @@ struct FileListView: View {
                     NSWorkspace.shared.selectFile(job.path, inFileViewerRootedAtPath: "")
                 }
 
-                Button("Reveal Output CHD in Finder") {
+                Button("Reveal Output in Finder") {
                     revealOutput(job)
                 }
                 .disabled(job.status != .done)
@@ -173,6 +173,7 @@ struct FileListView: View {
         case .iso: return .blue
         case .cue: return Color(red: 0.2, green: 0.72, blue: 0.35)
         case .gdi: return Color(red: 0.95, green: 0.55, blue: 0.1)
+        case .chd: return .purple
         }
     }
 

@@ -234,6 +234,7 @@ final class ConversionEngine: @unchecked Sendable {
         case .iso: succeeded = await convertISO(job, snapshot: snapshot)
         case .cue: succeeded = await convertCUE(job, snapshot: snapshot)
         case .gdi: succeeded = await convertGDI(job, snapshot: snapshot)
+        case .chd: succeeded = await extractCHD(job, snapshot: snapshot)
         }
 
         if succeeded {
@@ -351,6 +352,64 @@ final class ConversionEngine: @unchecked Sendable {
             refs.forEach { safeDelete($0) }
         }
         return true
+    }
+
+    // MARK: - CHD extraction
+
+    private func extractCHD(_ job: ConversionJob, snapshot: JobSnapshot) async -> Bool {
+        let ts = { DateFormatter.timestamp.string(from: Date()) }
+
+        // Try extractcd first (covers CD-based CHDs: CUE/BIN, GDI)
+        if capabilities.hasExtractCD {
+            if let r = await runChdman(job: job, snapshot: snapshot, args: ["extractcd", "-i", snapshot.path, "-o", snapshot.outputPath]),
+               r.succeeded, outputValid(snapshot.outputPath) {
+                return true
+            }
+            removeInvalidOutput(snapshot.outputPath)
+
+            if !capabilities.hasExtractDVD {
+                let msg = "[\(ts())] [FAIL] \(snapshot.filename) — extractcd failed and extractdvd unavailable."
+                await setJob(job, status: .failed, detail: "extractcd failed", log: msg)
+                emit(msg)
+                Task { await logStore.appendGlobal(msg) }
+                return false
+            }
+
+            let retryMsg = "[\(ts())] [RETRY] \(snapshot.filename) — extractcd failed, trying extractdvd."
+            await appendLog(job, text: retryMsg + "\n")
+            emit(retryMsg)
+            Task { await logStore.appendGlobal(retryMsg) }
+        }
+
+        // Try extractdvd (covers DVD/ISO-based CHDs)
+        if capabilities.hasExtractDVD {
+            let isoOutput = snapshot.outputPath.replacingOccurrences(of: ".bin", with: ".iso")
+            if let r = await runChdman(job: job, snapshot: snapshot, args: ["extractdvd", "-i", snapshot.path, "-o", isoOutput]),
+               r.succeeded, outputValid(isoOutput) {
+                return true
+            }
+            removeInvalidOutput(isoOutput)
+        }
+
+        let failMsg = "[\(ts())] [FAIL] \(snapshot.filename) — all extraction attempts failed."
+        await setJob(job, status: .failed, detail: "All attempts failed", log: failMsg)
+        emit(failMsg)
+        Task { await logStore.appendGlobal(failMsg) }
+        return false
+    }
+
+    private func outputValid(_ path: String) -> Bool {
+        let fm = FileManager.default
+        guard fm.fileExists(atPath: path) else { return false }
+        let size = (try? fm.attributesOfItem(atPath: path))?[.size] as? Int ?? 0
+        return size > 0
+    }
+
+    private func removeInvalidOutput(_ path: String) {
+        let fm = FileManager.default
+        guard fm.fileExists(atPath: path) else { return }
+        let size = (try? fm.attributesOfItem(atPath: path))?[.size] as? Int ?? 0
+        if size == 0 { try? fm.removeItem(atPath: path) }
     }
 
     // MARK: - chdman process runner

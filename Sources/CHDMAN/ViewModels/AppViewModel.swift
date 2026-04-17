@@ -8,6 +8,7 @@ final class AppViewModel: ObservableObject {
     // MARK: - UI state
 
     @Published var selectedFolder: URL?
+    @Published var appMode: AppMode = .create
     @Published var isRecursive: Bool = true
     @Published var jobs: [ConversionJob] = []
     @Published var parallelJobs: Int = 2
@@ -127,10 +128,11 @@ final class AppViewModel: ObservableObject {
         isScanning = true
         defer { isScanning = false }
 
-        let discovered = await scanner.scan(folder: folder, recursive: isRecursive)
+        let discovered = await scanner.scan(folder: folder, recursive: isRecursive, mode: appMode)
         jobs = discovered
 
-        let msg = "[\(timestamp())] Scan complete — \(discovered.count) item(s) found in \(folder.path)"
+        let modeLabel = appMode == .create ? "disc images" : "CHD files"
+        let msg = "[\(timestamp())] Scan complete — \(discovered.count) \(modeLabel) found in \(folder.path)"
         appendGlobalLog(msg)
         Task { await logStore.appendGlobal(msg) }
     }
@@ -171,7 +173,7 @@ final class AppViewModel: ObservableObject {
         }
         chdmanCapabilities = caps
 
-        let capLine = "[\(timestamp())] chdman: \(chdmanPath) | createcd=\(caps.hasCreateCD) createdvd=\(caps.hasCreateDVD)"
+        let capLine = "[\(timestamp())] chdman: \(chdmanPath) | createcd=\(caps.hasCreateCD) createdvd=\(caps.hasCreateDVD) extractcd=\(caps.hasExtractCD) extractdvd=\(caps.hasExtractDVD)"
         appendGlobalLog(capLine)
 
         let concurrency = min(parallelJobs, ProcessInfo.processInfo.activeProcessorCount)

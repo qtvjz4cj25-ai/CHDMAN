@@ -162,6 +162,7 @@ struct JobLogSheet: View {
         case .iso: return .blue
         case .cue: return Color(red: 0.2, green: 0.72, blue: 0.35)
         case .gdi: return Color(red: 0.95, green: 0.55, blue: 0.1)
+        case .chd: return .purple
         }
     }
 }

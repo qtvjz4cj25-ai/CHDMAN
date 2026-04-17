@@ -6,6 +6,28 @@ enum SourceType: String, CaseIterable, Hashable, Sendable {
     case iso = "ISO"
     case cue = "CUE"
     case gdi = "GDI"
+    case chd = "CHD"
+}
+
+enum AppMode: String, CaseIterable, Identifiable, Sendable {
+    case create  = "create"
+    case extract = "extract"
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .create:  return "Create CHD"
+        case .extract: return "Extract CHD"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .create:  return "archivebox.fill"
+        case .extract: return "archivebox.circle"
+        }
+    }
 }
 
 // MARK: - JobStatus

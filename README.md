@@ -8,7 +8,9 @@ This project was vibe coded with [Claude](https://claude.ai) (Anthropic's AI ass
 
 ## Features
 
+- **Bidirectional** — create CHD from disc images or extract disc images from CHD
 - Batch convert CUE/BIN, GDI, and ISO disc images to CHD
+- Batch extract CHD files back to BIN or ISO
 - **Compression presets** — Fast, Balanced, or Smallest to trade speed for file size
 - Folder scanning with recursive file discovery
 - Drag and drop folder support
@@ -18,8 +20,9 @@ This project was vibe coded with [Claude](https://claude.ai) (Anthropic's AI ass
 - Per-job and global logging with log file export
 - Optional source file deletion after successful conversion
 - macOS notifications on batch completion
+- Drag-and-drop folders with auto-scan
 - Auto-detection of chdman with guided install (Homebrew or MAME download)
-- Automatic chdman capability detection (createcd/createdvd)
+- Automatic chdman capability detection (createcd/createdvd/extractcd/extractdvd)
 - Configurable chdman binary path
 - macOS native SwiftUI interface
 

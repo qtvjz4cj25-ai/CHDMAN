@@ -30,7 +30,7 @@ struct ContentView: View {
                                 .fill(Color.accentColor.opacity(0.07))
                         )
                         .overlay(
-                            Label("Drop folder to set scan target", systemImage: "folder.badge.plus")
+                            Label("Drop folder to scan", systemImage: "folder.badge.plus")
                                 .font(.title3.weight(.medium))
                                 .foregroundStyle(Color.accentColor)
                         )
@@ -112,6 +112,20 @@ struct ContentView: View {
     private var toolbarView: some View {
         HStack(spacing: 8) {
 
+            // Mode picker
+            Picker("Mode", selection: $vm.appMode) {
+                ForEach(AppMode.allCases) { mode in
+                    Label(mode.label, systemImage: mode.icon).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .fixedSize()
+            .disabled(vm.isConverting)
+            .help(vm.appMode == .create ? "Create CHD from disc images" : "Extract disc images from CHD")
+            .onChange(of: vm.appMode) { _ in vm.clearList() }
+
+            Divider().frame(height: 18)
+
             // Folder picker + drop hint
             Button {
                 vm.selectFolder()
@@ -172,7 +186,9 @@ struct ContentView: View {
                 }
             }
             .disabled(!vm.canScan)
-            .help("Scan the selected folder for ISO, CUE, and GDI files")
+            .help(vm.appMode == .create
+                  ? "Scan the selected folder for ISO, CUE, and GDI files"
+                  : "Scan the selected folder for CHD files")
 
             // Clear list
             Button {
@@ -211,10 +227,12 @@ struct ContentView: View {
 
             Divider().frame(height: 18)
 
-            compressionPresetChip
-                .help(vm.compressionPreset.detail)
+            if vm.appMode == .create {
+                compressionPresetChip
+                    .help(vm.compressionPreset.detail)
 
-            Divider().frame(height: 18)
+                Divider().frame(height: 18)
+            }
 
             // Start
             Button {
@@ -259,8 +277,13 @@ struct ContentView: View {
             // Capabilities badge
             if let caps = vm.chdmanCapabilities {
                 HStack(spacing: 4) {
-                    capBadge("createcd",  available: caps.hasCreateCD)
-                    capBadge("createdvd", available: caps.hasCreateDVD)
+                    if vm.appMode == .create {
+                        capBadge("createcd",  available: caps.hasCreateCD)
+                        capBadge("createdvd", available: caps.hasCreateDVD)
+                    } else {
+                        capBadge("extractcd",  available: caps.hasExtractCD)
+                        capBadge("extractdvd", available: caps.hasExtractDVD)
+                    }
                 }
             }
 
@@ -407,7 +430,10 @@ struct ContentView: View {
                 forTypeIdentifier: UTType.folder.identifier
             ) { url, _, _ in
                 guard let url else { return }
-                Task { @MainActor in vm.selectedFolder = url }
+                Task { @MainActor in
+                    vm.selectedFolder = url
+                    await vm.scan()
+                }
             }
             return true
         }
@@ -421,7 +447,10 @@ struct ContentView: View {
                 var isDir: ObjCBool = false
                 FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
                 guard isDir.boolValue else { return }
-                Task { @MainActor in vm.selectedFolder = url }
+                Task { @MainActor in
+                    vm.selectedFolder = url
+                    await vm.scan()
+                }
             }
             return true
         }

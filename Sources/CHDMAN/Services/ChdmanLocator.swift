@@ -47,13 +47,17 @@ struct ChdmanLocator {
         let result = try await runQuiet(executablePath: chdmanPath, arguments: [])
         let combined = result.stdout + result.stderr
 
-        let hasCreateCD  = combined.range(of: "createcd",  options: .caseInsensitive) != nil
-        let hasCreateDVD = combined.range(of: "createdvd", options: .caseInsensitive) != nil
+        let hasCreateCD   = combined.range(of: "createcd",   options: .caseInsensitive) != nil
+        let hasCreateDVD  = combined.range(of: "createdvd",  options: .caseInsensitive) != nil
+        let hasExtractCD  = combined.range(of: "extractcd",  options: .caseInsensitive) != nil
+        let hasExtractDVD = combined.range(of: "extractdvd", options: .caseInsensitive) != nil
 
         return ChdmanCapabilities(
-            hasCreateCD:  hasCreateCD,
-            hasCreateDVD: hasCreateDVD,
-            rawHelpText:  combined
+            hasCreateCD:   hasCreateCD,
+            hasCreateDVD:  hasCreateDVD,
+            hasExtractCD:  hasExtractCD,
+            hasExtractDVD: hasExtractDVD,
+            rawHelpText:   combined
         )
     }
 

@@ -7,15 +7,22 @@ struct FolderScanner: Sendable {
     /// Runs file-system enumeration off the main thread, then creates the
     /// @MainActor ConversionJob objects back on the main actor.
     @MainActor
-    func scan(folder: URL, recursive: Bool) async -> [ConversionJob] {
+    func scan(folder: URL, recursive: Bool, mode: AppMode = .create) async -> [ConversionJob] {
         // Heavy FS work on a background priority executor.
         let found: [(URL, SourceType)] = await Task.detached(priority: .userInitiated) {
-            Self.enumerateFiles(folder: folder, recursive: recursive)
+            Self.enumerateFiles(folder: folder, recursive: recursive, mode: mode)
         }.value
 
         // ConversionJob is @MainActor — create them here on the main actor.
         return found.map { (url, type) in
-            let output = url.deletingPathExtension().appendingPathExtension("chd")
+            let output: URL
+            switch mode {
+            case .create:
+                output = url.deletingPathExtension().appendingPathExtension("chd")
+            case .extract:
+                // Default extraction to .bin (chdman extractcd outputs a bin+cue or raw bin)
+                output = url.deletingPathExtension().appendingPathExtension("bin")
+            }
             return ConversionJob(sourceURL: url, sourceType: type, outputURL: output)
         }
     }
@@ -24,7 +31,8 @@ struct FolderScanner: Sendable {
 
     private static func enumerateFiles(
         folder: URL,
-        recursive: Bool
+        recursive: Bool,
+        mode: AppMode
     ) -> [(URL, SourceType)] {
         let fm = FileManager.default
         let skipOptions: FileManager.DirectoryEnumerationOptions = recursive
@@ -40,15 +48,25 @@ struct FolderScanner: Sendable {
         var results: [(URL, SourceType)] = []
         var seen: Set<String> = []
 
+        let extensions: Set<String>
+        switch mode {
+        case .create:  extensions = ["iso", "cue", "gdi"]
+        case .extract: extensions = ["chd"]
+        }
+
         for case let url as URL in enumerator {
             guard (try? url.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true
             else { continue }
 
+            let ext = url.pathExtension.lowercased()
+            guard extensions.contains(ext) else { continue }
+
             let type: SourceType
-            switch url.pathExtension.lowercased() {
+            switch ext {
             case "iso": type = .iso
             case "cue": type = .cue
             case "gdi": type = .gdi
+            case "chd": type = .chd
             default:    continue
             }
 
@@ -58,7 +76,6 @@ struct FolderScanner: Sendable {
             results.append((url, type))
         }
 
-        // Deterministic ordering: ISOs first, then CUEs, then GDIs; within each by path.
         results.sort {
             let orderA = sortKey($0.1), orderB = sortKey($1.1)
             if orderA != orderB { return orderA < orderB }
@@ -72,6 +89,7 @@ struct FolderScanner: Sendable {
         case .iso: return 0
         case .cue: return 1
         case .gdi: return 2
+        case .chd: return 3
         }
     }
 }
