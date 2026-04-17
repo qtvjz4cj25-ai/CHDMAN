@@ -1,6 +1,6 @@
 # CHDForge - Batch CHD Converter
 
-A macOS app for batch converting disc images (CUE/BIN, GDI) to CHD format using [chdman](https://wiki.recalbox.com/en/tutorials/utilities/rom-conversion/chdman).
+A macOS app for batch converting disc images to CHD format using [chdman](https://wiki.recalbox.com/en/tutorials/utilities/rom-conversion/chdman).
 
 ## About
 
@@ -8,17 +8,33 @@ This project was vibe coded with [Claude](https://claude.ai) (Anthropic's AI ass
 
 ## Features
 
-- Batch convert CUE/BIN and GDI disc images to CHD
+- Batch convert CUE/BIN, GDI, and ISO disc images to CHD
 - Folder scanning with recursive file discovery
-- Pause/resume conversions
-- Real-time progress tracking and logging
-- Configurable chdman binary location
+- Drag and drop folder support
+- Parallel conversions with configurable concurrency
+- Pause, resume, and cancel conversions
+- Real-time progress tracking with ETA
+- Per-job and global logging with log file export
+- Optional source file deletion after successful conversion
+- macOS notifications on batch completion
+- Auto-detection of chdman with guided install (Homebrew or MAME download)
+- Automatic chdman capability detection (createcd/createdvd)
+- Configurable chdman binary path
 - macOS native SwiftUI interface
 
 ## Requirements
 
 - macOS 13.0+
 - [chdman](https://wiki.recalbox.com/en/tutorials/utilities/rom-conversion/chdman) binary installed
+
+## Installing chdman
+
+**Option 1 — Homebrew** (requires [Homebrew](https://brew.sh)):
+```bash
+brew install rom-tools
+```
+
+**Option 2 — MAME**: Download from [mamedev.org](https://www.mamedev.org/release.html), which includes chdman. Then set the path in the app's Settings.
 
 ## Building
 
