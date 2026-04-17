@@ -10,9 +10,6 @@ let package = Package(
         .executableTarget(
             name: "CHDMAN",
             path: "Sources/CHDMAN",
-            resources: [
-                .copy("Resources/AppIcon.icns")
-            ],
             swiftSettings: [
                 .unsafeFlags(["-strict-concurrency=targeted"])
             ]
