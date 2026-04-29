@@ -187,7 +187,8 @@ struct FileListView: View {
         case .rar: return Color(red: 0.7, green: 0.3, blue: 0.6)
         case .wbfs:   return Color(red: 0.3, green: 0.6, blue: 0.9)
         case .cci:    return Color(red: 0.55, green: 0.15, blue: 0.15)
-        case .ps3dir: return Color(red: 0.0, green: 0.45, blue: 0.85)
+        case .ps3dir:  return Color(red: 0.0, green: 0.45, blue: 0.85)
+        case .xboxDir: return Color(red: 0.1, green: 0.6, blue: 0.2)
         }
     }
 

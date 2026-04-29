@@ -10,6 +10,7 @@ struct SettingsView: View {
     @State private var witDraftPath: String = ""
     @State private var repackinatorDraftPath: String = ""
     @State private var makePs3IsoDraftPath: String = ""
+    @State private var extractXisoDraftPath: String = ""
 
     var body: some View {
         Form {
@@ -478,6 +479,61 @@ struct SettingsView: View {
             Section {
                 VStack(alignment: .leading, spacing: 10) {
                     VStack(alignment: .leading, spacing: 3) {
+                        Text("Custom extract-xiso path")
+                            .font(.system(.body, design: .rounded).weight(.semibold))
+                        Text("Leave blank to auto-detect via Homebrew. Install with: brew install extract-xiso")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    HStack {
+                        TextField("/opt/homebrew/bin/extract-xiso", text: $extractXisoDraftPath)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(.body, design: .monospaced))
+                        Button("Browse…") {
+                            let panel = NSOpenPanel()
+                            panel.canChooseFiles = true
+                            panel.canChooseDirectories = false
+                            panel.allowsMultipleSelection = false
+                            panel.message = "Select the extract-xiso executable"
+                            if panel.runModal() == .OK, let url = panel.url {
+                                extractXisoDraftPath = url.path
+                            }
+                        }
+                    }
+
+                    HStack {
+                        Button("Save") {
+                            vm.customExtractXisoPath = extractXisoDraftPath
+                        }
+                        .buttonStyle(.borderedProminent)
+
+                        Button("Clear") {
+                            extractXisoDraftPath = ""
+                            vm.customExtractXisoPath = ""
+                        }
+
+                        Spacer()
+
+                        if !vm.customExtractXisoPath.isEmpty {
+                            Label("Saved", systemImage: "checkmark.circle.fill")
+                                .foregroundStyle(.green)
+                                .font(.caption)
+                        } else {
+                            Label("Auto-detect active", systemImage: "magnifyingglass")
+                                .foregroundStyle(.secondary)
+                                .font(.caption)
+                        }
+                    }
+                }
+                .padding(.vertical, 4)
+            } header: {
+                Label("extract-xiso Executable (Xbox OG)", systemImage: "square.stack.3d.up.fill")
+            }
+
+            Section {
+                VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 3) {
                         Text("ScreenScraper Account")
                             .font(.system(.body, design: .rounded).weight(.semibold))
                         Text("Optional but recommended — free accounts get higher API rate limits. Register at screenscraper.fr.")
@@ -774,6 +830,7 @@ struct SettingsView: View {
             witDraftPath = vm.customWitPath
             repackinatorDraftPath = vm.customRepackinatorPath
             makePs3IsoDraftPath = vm.customMakePs3IsoPath
+            extractXisoDraftPath = vm.customExtractXisoPath
         }
     }
 

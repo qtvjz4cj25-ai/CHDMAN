@@ -55,6 +55,12 @@ struct FolderScanner: Sendable {
             case (.makeps3iso, .extract):
                 // Not supported; shouldn't occur
                 output = url.deletingPathExtension()
+            case (.extractXiso, .create):
+                // Source is an Xbox game directory — output ISO sits next to it
+                output = url.appendingPathExtension("iso")
+            case (.extractXiso, .extract):
+                // Source is an XISO file — output is a directory next to the ISO
+                output = url.deletingPathExtension()
             }
             return ConversionJob(sourceURL: url, sourceType: type, outputURL: output)
         }
@@ -83,9 +89,12 @@ struct FolderScanner: Sendable {
         var seen: Set<String> = []
 
         let extensions: Set<String>
-        // PS3 folder scanning is directory-based — handled separately
+        // Directory-based scans handled separately
         if tool == .makeps3iso && mode == .create {
             return enumeratePS3GameFolders(folder: folder, recursive: recursive)
+        }
+        if tool == .extractXiso && mode == .create {
+            return enumerateXboxGameFolders(folder: folder, recursive: recursive)
         }
 
         switch (tool, mode) {
@@ -104,6 +113,8 @@ struct FolderScanner: Sendable {
         case (.repackinator, .create): extensions = ["iso"]
         case (.repackinator, .extract):extensions = ["cci"]
         case (.makeps3iso, _):         extensions = []
+        case (.extractXiso, .extract): extensions = ["iso"]
+        case (.extractXiso, .create):  extensions = []  // handled above via directory scan
         }
 
         for case let url as URL in enumerator {
@@ -168,8 +179,46 @@ struct FolderScanner: Sendable {
         case .rar: return 14
         case .wbfs:   return 15
         case .cci:    return 16
-        case .ps3dir: return 17
+        case .ps3dir:  return 17
+        case .xboxDir: return 18
         }
+    }
+
+    // MARK: - Xbox game folder enumeration
+
+    /// Scans for subdirectories containing default.xbe or default.xex — these are Xbox OG game folders.
+    private static func enumerateXboxGameFolders(folder: URL, recursive: Bool) -> [(URL, SourceType)] {
+        let fm = FileManager.default
+        var results: [(URL, SourceType)] = []
+        var seen: Set<String> = []
+
+        func scanLevel(_ dir: URL, depth: Int) {
+            guard let children = try? fm.contentsOfDirectory(
+                at: dir,
+                includingPropertiesForKeys: [.isDirectoryKey],
+                options: [.skipsHiddenFiles]
+            ) else { return }
+
+            for child in children.sorted(by: { $0.path < $1.path }) {
+                guard (try? child.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
+                else { continue }
+
+                let xbe = child.appendingPathComponent("default.xbe")
+                let xex = child.appendingPathComponent("default.xex")
+                if fm.fileExists(atPath: xbe.path) || fm.fileExists(atPath: xex.path) {
+                    let key = child.standardizedFileURL.path
+                    if !seen.contains(key) {
+                        seen.insert(key)
+                        results.append((child, .xboxDir))
+                    }
+                } else if recursive && depth < 4 {
+                    scanLevel(child, depth: depth + 1)
+                }
+            }
+        }
+
+        scanLevel(folder, depth: 0)
+        return results
     }
 
     // MARK: - PS3 game folder enumeration

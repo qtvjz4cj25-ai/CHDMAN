@@ -60,6 +60,8 @@ enum CompressionPreset: String, CaseIterable, Identifiable, Sendable {
             return "CCI — compressed + trim scrub (smallest)"
         case (_, .makeps3iso):
             return "Not applicable — straight folder-to-ISO repack"
+        case (_, .extractXiso):
+            return "Not applicable — extract-xiso produces verbatim Xbox ISOs"
         }
     }
 

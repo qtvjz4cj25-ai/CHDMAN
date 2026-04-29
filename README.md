@@ -24,12 +24,14 @@ A macOS app for batch converting disc images and ROM archives across multiple em
 | **Repackinator** | Create | ISO → CCI | Original Xbox |
 | **Repackinator** | Extract | CCI → ISO | |
 | **makeps3iso** | Create | PS3 Folder → ISO | PlayStation 3 (JB) |
+| **extract-xiso** | Create | Xbox Folder → XISO | Original Xbox |
+| **extract-xiso** | Extract | XISO → Xbox Folder | |
 
 ---
 
 ## Features
 
-- **9 conversion backends** — one app for your entire ROM library
+- **10 conversion backends** — one app for your entire ROM library
 - **Bidirectional** — create compressed images or extract back to original
 - **First-launch Setup Wizard** — detects missing tools and installs them in one click
 - **Artwork Scraper** — fetch box art, screenshots, and wheel art from ScreenScraper.fr and generate `gamelist.xml` for EmulationStation, ES-DE, or Images Only
@@ -235,6 +237,24 @@ You should see usage output. Then set the path in **Settings → makeps3iso Path
 
 ---
 
+#### extract-xiso — XISO (Original Xbox)
+```bash
+brew install extract-xiso
+```
+
+Or build from source — download the repo from [github.com/xboxdev/extract-xiso](https://github.com/xboxdev/extract-xiso), then:
+```bash
+cmake .
+make
+```
+Move the resulting `extract-xiso` binary somewhere permanent and set the path in **Settings → extract-xiso Path**.
+
+> **Usage — Create:** Point CHDForge at your Xbox games folder. It scans for subdirectories containing `default.xbe` (the Xbox executable) and converts each to an XISO `.iso` file.
+>
+> **Usage — Extract:** Scan for `.iso` files and extract each to a matching directory.
+
+---
+
 ### Verify Everything Is Working
 
 After installing, launch CHDForge. The **Setup Wizard** will check each tool automatically. You can also select a tool in the sidebar — the app checks for its binary and shows an alert with instructions if it can't find it.
@@ -289,6 +309,9 @@ All formats use **lossless** compression — gameplay is bit-for-bit identical r
 
 ### makeps3iso (PS3 ISO)
 No compression presets — makeps3iso performs a straight folder-to-ISO repack with no configurable compression.
+
+### extract-xiso (Xbox OG XISO)
+No compression presets — extract-xiso produces verbatim Xbox ISO images.
 
 ---
 

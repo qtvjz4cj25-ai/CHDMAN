@@ -11,6 +11,7 @@ enum ToolKind: String, CaseIterable, Identifiable, Sendable {
     case wit            = "wit"
     case repackinator   = "repackinator"
     case makeps3iso     = "makeps3iso"
+    case extractXiso    = "extract-xiso"
 
     var id: String { rawValue }
 
@@ -24,6 +25,7 @@ enum ToolKind: String, CaseIterable, Identifiable, Sendable {
         case .wit:            return "WBFS (Wii/GC)"
         case .repackinator:   return "CCI (Xbox OG)"
         case .makeps3iso:     return "ISO (PS3)"
+        case .extractXiso:    return "XISO (Xbox OG)"
         }
     }
 
@@ -37,6 +39,7 @@ enum ToolKind: String, CaseIterable, Identifiable, Sendable {
         case .wit:            return "opticaldisc.fill"
         case .repackinator:   return "xmark.seal.fill"
         case .makeps3iso:     return "circle.grid.2x2.fill"
+        case .extractXiso:    return "square.stack.3d.up.fill"
         }
     }
 
@@ -53,6 +56,14 @@ enum ToolKind: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .makeps3iso: return false
         default:          return true
+        }
+    }
+
+    /// Whether this tool's extract output is a directory rather than a file.
+    var extractOutputIsDirectory: Bool {
+        switch self {
+        case .extractXiso: return true
+        default:           return false
         }
     }
 }
@@ -77,7 +88,8 @@ enum SourceType: String, CaseIterable, Hashable, Sendable {
     case rar = "RAR"
     case wbfs   = "WBFS"
     case cci    = "CCI"
-    case ps3dir = "PS3DIR"
+    case ps3dir  = "PS3DIR"
+    case xboxDir = "XBDIR"
 }
 
 // MARK: - AppMode

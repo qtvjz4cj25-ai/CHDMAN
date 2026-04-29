@@ -65,6 +65,10 @@ private let allTools: [ToolSetupInfo] = [
           installMethod: .manual(
             url: "https://github.com/bucanero/ps3iso-utils/releases",
             hint: "Download the tar, extract it, chmod +x the binary, then set the path in Settings.")),
+    .init(id: .extractXiso,
+          name: "extract-xiso",
+          subtitle: "Xbox OG · Create & extract XISO images",
+          installMethod: .brew(package: "extract-xiso")),
 ]
 
 // MARK: - Tool status
@@ -427,6 +431,9 @@ struct SetupWizardView: View {
                 "\(home)/Applications/ps3iso-utils/makeps3iso",
                 "/usr/local/bin/makeps3iso",
             ].first { FileManager.default.fileExists(atPath: $0) }
+        case .extractXiso:
+            return ["/opt/homebrew/bin/extract-xiso", "/usr/local/bin/extract-xiso"]
+                .first { FileManager.default.isExecutableFile(atPath: $0) }
         }
     }
 

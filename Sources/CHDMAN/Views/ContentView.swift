@@ -124,6 +124,24 @@ struct ContentView: View {
             Button("OK", role: .cancel) {}
         } message: { Text(vm.makePs3IsoAlertMessage) }
 
+        .alert("extract-xiso not available", isPresented: $vm.showExtractXisoAlert) {
+            Button("OK", role: .cancel) {}
+        } message: { Text(vm.extractXisoAlertMessage) }
+
+        .alert("extract-xiso not found", isPresented: $vm.extractXisoMissing) {
+            Button("Copy Homebrew Command") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString("brew install extract-xiso", forType: .string)
+            }
+            Button("Open GitHub") {
+                NSWorkspace.shared.open(URL(string: "https://github.com/xboxdev/extract-xiso")!)
+            }
+            Button("Open Settings") { openSettings() }
+            Button("Dismiss", role: .cancel) {}
+        } message: {
+            Text("extract-xiso is required for Xbox OG XISO creation and extraction.\n\nInstall with Homebrew:\nbrew install extract-xiso\n\nOr build from source at github.com/xboxdev/extract-xiso")
+        }
+
         .alert("makeps3iso not found", isPresented: $vm.makePs3IsoMissing) {
             Button("Open Downloads") {
                 NSWorkspace.shared.open(URL(string: "https://github.com/bucanero/ps3iso-utils/releases")!)
@@ -267,6 +285,7 @@ private struct SidebarView: View {
         case .wit:          return .orange
         case .repackinator: return Color(red: 0.7, green: 0.2, blue: 0.2)
         case .makeps3iso:   return Color(red: 0.0, green: 0.45, blue: 0.85)
+        case .extractXiso:  return Color(red: 0.1, green: 0.6, blue: 0.2)
         }
     }
 }
@@ -413,8 +432,12 @@ private struct DetailView: View {
         case (.maxcso,      .extract): return "CSO → ISO"
         case (.nsz,         .create):  return "NSP / XCI → NSZ / XCZ"
         case (.nsz,         .extract): return "NSZ / XCZ → NSP / XCI"
-        case (.wit,         .create):  return "ISO → WBFS"
-        case (.wit,         .extract): return "WBFS → ISO"
+        case (.wit,          .create):  return "ISO → WBFS"
+        case (.wit,          .extract): return "WBFS → ISO"
+        case (.repackinator, .create):  return "ISO → CCI"
+        case (.repackinator, .extract): return "CCI → ISO"
+        case (.extractXiso,  .create):  return "Xbox Folder → XISO"
+        case (.extractXiso,  .extract): return "XISO → Xbox Folder"
         default:                        return ""
         }
     }
@@ -691,6 +714,8 @@ private struct DetailView: View {
         case (.repackinator, .extract): return "Scan for CCI files"
         case (.makeps3iso, .create):    return "Scan for PS3 game folders (containing PS3_GAME/PARAM.SFO)"
         case (.makeps3iso, .extract):   return "makeps3iso only supports create mode"
+        case (.extractXiso, .create):   return "Scan for Xbox game folders (containing default.xbe)"
+        case (.extractXiso, .extract):  return "Scan for Xbox ISO files"
         }
     }
 
@@ -741,6 +766,7 @@ private extension ToolKind {
         case .wit:           return "Wii/GC · WBFS"
         case .repackinator:  return "Xbox OG · CCI"
         case .makeps3iso:    return "PS3 · Folder → ISO"
+        case .extractXiso:   return "Xbox OG · XISO"
         }
     }
 }

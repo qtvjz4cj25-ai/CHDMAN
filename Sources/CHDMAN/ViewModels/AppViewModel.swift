@@ -44,6 +44,9 @@ final class AppViewModel: ObservableObject {
     @Published var showMakePs3IsoAlert: Bool = false
     @Published var makePs3IsoAlertMessage: String = ""
     @Published var makePs3IsoMissing: Bool = false
+    @Published var showExtractXisoAlert: Bool = false
+    @Published var extractXisoAlertMessage: String = ""
+    @Published var extractXisoMissing: Bool = false
     @Published var chdmanCapabilities: ChdmanCapabilities?
 
     // MARK: - Persisted settings
@@ -64,6 +67,7 @@ final class AppViewModel: ObservableObject {
     @AppStorage("customWitPath") var customWitPath: String = ""
     @AppStorage("customRepackinatorPath") var customRepackinatorPath: String = ""
     @AppStorage("customMakePs3IsoPath") var customMakePs3IsoPath: String = ""
+    @AppStorage("customExtractXisoPath") var customExtractXisoPath: String = ""
     @AppStorage("deleteSourceAfterConversion") var deleteSourceAfterConversion: Bool = false
     @AppStorage("notifyOnCompletion") var notifyOnCompletion: Bool = true
     @AppStorage("compressionPreset") private var compressionPresetRawValue: String = CompressionPreset.balanced.rawValue
@@ -130,6 +134,7 @@ final class AppViewModel: ObservableObject {
     private let witLocator = WitLocator()
     private let repackinatorLocator = RepackinatorLocator()
     private let makePs3IsoLocator = MakePs3IsoLocator()
+    private let extractXisoLocator = ExtractXisoLocator()
     private let logStore = LogStore()
     private let maxGlobalLogCharacters = 200_000
 
@@ -155,6 +160,7 @@ final class AppViewModel: ObservableObject {
         witMissing = false
         repackinatorMissing = false
         makePs3IsoMissing = false
+        extractXisoMissing = false
 
         switch selectedTool {
         case .chdman:
@@ -234,6 +240,16 @@ final class AppViewModel: ObservableObject {
                 makePs3IsoMissing = !isValid
             } catch {
                 makePs3IsoMissing = true
+            }
+        case .extractXiso:
+            do {
+                let path = try await extractXisoLocator.locate(
+                    customPath: customExtractXisoPath.isEmpty ? nil : customExtractXisoPath
+                )
+                let isValid = await extractXisoLocator.verify(path: path)
+                extractXisoMissing = !isValid
+            } catch {
+                extractXisoMissing = true
             }
         }
     }
@@ -626,6 +642,46 @@ final class AppViewModel: ObservableObject {
                 }
             }
             engineToRun = ps3Eng
+
+        case .extractXiso:
+            let extractXisoPath: String
+            do {
+                extractXisoPath = try await extractXisoLocator.locate(
+                    customPath: customExtractXisoPath.isEmpty ? nil : customExtractXisoPath
+                )
+            } catch {
+                extractXisoAlertMessage =
+                    "\(error.localizedDescription)\n\nInstall with:\n    brew install extract-xiso"
+                showExtractXisoAlert = true
+                return
+            }
+
+            guard await extractXisoLocator.verify(path: extractXisoPath) else {
+                extractXisoAlertMessage =
+                    "The selected executable does not appear to be a valid extract-xiso binary."
+                showExtractXisoAlert = true
+                return
+            }
+
+            chdmanCapabilities = nil
+            let xisoLine = "[\(timestamp())] extract-xiso: \(extractXisoPath)"
+            appendGlobalLog(xisoLine)
+            Task { await logStore.appendGlobal(xisoLine) }
+
+            let xisoEng = ExtractXisoEngine(
+                extractXisoPath: extractXisoPath,
+                mode: appMode,
+                concurrency: concurrency,
+                jobs: jobs,
+                logStore: logStore,
+                deleteSource: deleteSourceAfterConversion
+            )
+            xisoEng.onLogLine = { [weak self] line in
+                Task { @MainActor [weak self] in
+                    self?.appendGlobalLog(line)
+                }
+            }
+            engineToRun = xisoEng
         }
 
         let startMsg = startMessage(concurrency: concurrency)
@@ -764,6 +820,10 @@ final class AppViewModel: ObservableObject {
             return "PS3 game folders"
         case (.makeps3iso, .extract):
             return "PS3 ISO files"
+        case (.extractXiso, .create):
+            return "Xbox game folders"
+        case (.extractXiso, .extract):
+            return "Xbox ISO files"
         }
     }
 
